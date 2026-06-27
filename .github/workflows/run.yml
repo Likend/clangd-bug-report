@@ -1,21 +1,25 @@
 name: Reproduce issue
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-    run:
-        runs-on: windows-latest
-        steps:
-            - uses: actions/checkout@v5
+  run:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
 
-            - name: Setup MSYS2
-              uses: msys2/setup-msys2@v2
-              with:
-                  msystem: CLANG64
-                  update: true
-                  install: >-
-                      mingw-w64-clang-x86_64-toolchain
-                      mingw-w64-clang-x86_64-python
-            - name: Trigger clangd bug
-              shell: msys2 {0}
-              run: python assassin.py
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANG64
+          update: true
+          install: >-
+            mingw-w64-clang-x86_64-toolchain
+            mingw-w64-clang-x86_64-python
+      - name: Trigger clangd bug
+        shell: msys2 {0}
+        run: python assassin.py

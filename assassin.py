@@ -6,6 +6,12 @@ Precise reproduction script -- based on the request sequence from the latest Zed
 import asyncio
 import json
 import os
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 CPP_FILE = "test.cpp"
 
@@ -128,7 +134,7 @@ async def main():
         print(f"Crash reproduced successfully! Return code: {proc.returncode}")
         stderr_data = await proc.stderr.read()
         if stderr_data:
-            print("stderr:", stderr_data.decode(errors="replace"))
+            print("stderr:", stderr_data.decode("utf-8", errors="replace"))
     else:
         print("Did not crash, clangd is still alive.")
         proc.terminate()
