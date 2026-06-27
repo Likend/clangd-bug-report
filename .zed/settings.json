@@ -1,9 +1,0 @@
-{
-  "lsp": {
-    "clangd": {
-      "binary": {
-        "arguments": ["--log=verbose"],
-      },
-    },
-  },
-}
