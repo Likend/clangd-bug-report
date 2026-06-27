@@ -2,8 +2,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
-#include <ranges>
+// #include <ranges>
 #include <span>
 
 namespace croplines {
@@ -13,8 +12,7 @@ concept color_space = requires {
     requires std::integral<decltype(CS::channels)>;
 };
 
-struct RGB { static constexpr uint8_t channels = 3; using value_type = uint8_t; };
-static_assert(color_space<RGB>);
+// struct RGB { static constexpr uint8_t channels = 3; using value_type = uint8_t; };
 
 template <color_space CS>
 class ImageSpan {
@@ -41,17 +39,5 @@ class ImageSpan {
             }
         };
     };
-
-    auto pixels() {
-        return std::views::iota(0, 100) |
-               std::views::transform([](auto idx) { return idx; }) | std::views::join;
-    }
 };
-
-void force_instantiation() {
-    ImageSpan<RGB> img;
-    img.pixels();
-    ImageSpan<RGB>::ImageFlat::Iterator it;
-    it += 1;
-}
 }
