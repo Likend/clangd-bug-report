@@ -1,2 +1,2 @@
--std=gnu++23
+-std=gnu++20
 -xc++
