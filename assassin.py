@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-精确复现脚本 —— 基于最新 Zed 日志的请求序列
+Precise reproduction script -- based on the request sequence from the latest Zed log
 """
 import asyncio
 import json
@@ -36,7 +36,7 @@ async def main():
     project_dir = os.path.dirname(cpp_path)
     uri = "file:///" + cpp_path.replace(os.sep, '/')
 
-    # 启动 clangd
+    # Start clangd
     proc = await asyncio.create_subprocess_exec(
         "clangd",
         stdin=asyncio.subprocess.PIPE,
@@ -45,7 +45,7 @@ async def main():
         cwd=project_dir
     )
 
-    # 后台消费 stdout，防止阻塞
+    # Background task to consume stdout to prevent blocking
     async def drain_stdout():
         while True:
             msg = await read_message(proc.stdout)
@@ -53,7 +53,7 @@ async def main():
                 break
     asyncio.create_task(drain_stdout())
 
-    # 初始化
+    # Initialization
     await send_message(proc.stdin, {
         "jsonrpc": "2.0", "id": 1, "method": "initialize",
         "params": {
@@ -65,7 +65,7 @@ async def main():
     await asyncio.sleep(0.5)
     await send_message(proc.stdin, {"jsonrpc": "2.0", "method": "initialized", "params": {}})
 
-    # 打开文件
+    # Open the file
     with open(cpp_path, encoding='utf-8') as f:
         original = f.read()
     await send_message(proc.stdin, {
@@ -76,20 +76,20 @@ async def main():
             }
         }
     })
-    # 等待 clangd 完成 preamble 构建和索引（日志中约 4.5 秒）
-    await asyncio.sleep(5)  # 给足时间
+    # Wait for clangd to build the preamble and finish indexing (about 4.5 seconds in the log)
+    await asyncio.sleep(5)  # Give it plenty of time
 
-    # 定位 ro/*TARGET*/ 的起始字符位置（column = 42, line = 37）
+    # Locate the starting character position of ro/*TARGET*/ (column = 42, line = 37)
     marker = "ro/*TARGET*/"
     idx = original.find(marker)
     if idx == -1:
-        print("错误: 找不到 ro/*TARGET*/")
+        print("Error: Could not find ro/*TARGET*/")
         return
     before = original[:idx]
     line = before.count('\n')
     col = idx - before.rfind('\n') - 1 if line > 0 else idx
 
-    # ---------- 第一步：删除 "ro" ----------
+    # ---------- Step 1: Delete "ro" ----------
     await send_message(proc.stdin, {
         "jsonrpc": "2.0", "method": "textDocument/didChange",
         "params": {
@@ -101,10 +101,10 @@ async def main():
             ]
         }
     })
-    # 模拟思考时间（日志中约 11 秒）
+    # Simulate thinking time (about 11 seconds in the log)
     await asyncio.sleep(11)
 
-    # ---------- 第二步：输入 "r" ----------
+    # ---------- Step 2: Type "r" ----------
     await send_message(proc.stdin, {
         "jsonrpc": "2.0", "method": "textDocument/didChange",
         "params": {
@@ -117,12 +117,12 @@ async def main():
         }
     })
 
-    # ---------- 第三步：立即并发发送全部请求 ----------
-    # 光标位置在刚插入的 "r" 之后，即 column = col+1
+    # ---------- Step 3: Immediately send all requests concurrently ----------
+    # Cursor position is right after the newly inserted "r", i.e., column = col+1
     pos = {"line": line, "character": col+1}
     doc = {"textDocument": {"uri": uri}, "position": pos}
 
-    # 按照日志顺序和并发度，使用 create_task 同时发送
+    # Follow the order and concurrency from the log; send simultaneously using create_task
     tasks = [
         send_message(proc.stdin, {
             "jsonrpc": "2.0", "id": 43,
@@ -172,15 +172,15 @@ async def main():
     ]
     await asyncio.gather(*tasks)
 
-    # 等待 1 秒，检查 clangd 是否崩溃
+    # Wait 1 second, then check if clangd crashed
     await asyncio.sleep(1)
     if proc.returncode is not None:
-        print(f"✅ 崩溃复现成功！返回码: {proc.returncode}")
+        print(f"Crash reproduced successfully! Return code: {proc.returncode}")
         stderr_data = await proc.stderr.read()
         if stderr_data:
             print("stderr:", stderr_data.decode(errors='replace'))
     else:
-        print("未崩溃，clangd 仍存活。")
+        print("Did not crash, clangd is still alive.")
         proc.terminate()
         await proc.wait()
 
