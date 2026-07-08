@@ -136,7 +136,7 @@ async def main():
         if stderr_data:
             print("stderr:", stderr_data.decode("utf-8", errors="replace"))
     else:
-        print("Did not crash, clangd is still alive.")
+        print("Did not crash, clangd is still alive.", file=sys.stderr)
         proc.terminate()
         await proc.wait()
 
